@@ -1,0 +1,82 @@
+{
+  "name": "Pink Pony",
+  "id": "pinkpony",
+  "colors": {
+    "mode": "light",
+    "border": {
+      "weak": "rgba(219, 39, 119, 0.12)",
+      "medium": "rgba(219, 39, 119, 0.20)",
+      "strong": "rgba(219, 39, 119, 0.30)"
+    },
+    "text": {
+      "primary": "#4A1942",
+      "secondary": "#7D3C6B",
+      "disabled": "rgba(74, 25, 66, 0.5)",
+      "link": "#DB2777",
+      "maxContrast": "#2D0F28"
+    },
+    "primary": {
+      "main": "#EC4899",
+      "text": "#DB2777",
+      "border": "#BE185D",
+      "name": "primary",
+      "shade": "#BE185D",
+      "transparent": "#EC489926",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#EC489940"
+    },
+    "secondary": {
+      "main": "#FDF2F8",
+      "text": "#831843",
+      "border": "#F9A8D4",
+      "name": "secondary",
+      "shade": "#FBCFE8",
+      "transparent": "#FDF2F826",
+      "contrastText": "#500724",
+      "borderTransparent": "#FDF2F840"
+    },
+    "accent": {
+      "main": "#F472B6",
+      "text": "#EC4899",
+      "border": "#DB2777",
+      "name": "accent",
+      "shade": "#DB2777",
+      "transparent": "#F472B626",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#F472B640"
+    },
+    "info": {
+      "main": "#818CF8"
+    },
+    "success": {
+      "main": "#34D399"
+    },
+    "warning": {
+      "main": "#FBBF24"
+    },
+    "background": {
+      "canvas": "#FFF1F7",
+      "page": "#FFF5FA",
+      "primary": "#FFFFFF",
+      "secondary": "#FCE7F3",
+      "elevated": "#FFFFFF"
+    },
+    "action": {
+      "hover": "rgba(236, 72, 153, 0.12)",
+      "selected": "rgba(236, 72, 153, 0.24)",
+      "selectedBorder": "#EC4899",
+      "focus": "rgba(236, 72, 153, 0.36)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(74, 25, 66, 0.5)",
+      "disabledBackground": "rgba(236, 72, 153, 0.06)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #EC4899 0%, #F472B6 50%, #FBCFE8 100%)",
+      "brandVertical": "linear-gradient(0deg, #EC4899 0%, #F472B6 50%, #FBCFE8 100%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}

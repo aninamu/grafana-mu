@@ -12,6 +12,7 @@ export function getSelectableThemes() {
     'sapphiredusk',
     'tron',
     'gloom',
+    'pink_pony',
   ];
 
   if (getFeatureFlagClient().getBooleanValue(FlagKeys.GrafanaVisualDesignRefresh, false)) {
