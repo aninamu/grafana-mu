@@ -149,10 +149,16 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 
 ### Prerequisites
 
-- **Node.js v24.x** (see `.nvmrc` for exact version). Use `nvm install` / `nvm use` to match.
+- **Node.js v24.11.0** (see `.nvmrc`). This exact major matters — see the Node version gotcha below.
 - **Go 1.26.4** (see `go.mod`). Pre-installed in the VM.
-- **Yarn 4.11.0** via corepack (bundled in `.yarn/releases/`). Run `corepack enable` if `yarn` is not found.
+- **Yarn 4.15.0** via corepack (resolved from the `packageManager` field). Run `corepack enable` if `yarn` is not found.
 - **GCC** required for CGo/SQLite compilation of the backend.
+
+### Node version gotcha (important)
+
+The VM has a `node` shim at `/exec-daemon/node` (v22) that sits early on `PATH` and can shadow the nvm-managed v24, even after `nvm use`. Node v22 lacks native TypeScript type-stripping, so `yarn start` fails while building plugin webpack configs with `ERR_UNKNOWN_FILE_EXTENSION: Unknown file extension ".ts"` (the `.ts` webpack configs import other `.ts` files with explicit extensions, which only works on Node v24's native type stripping).
+
+`~/.bashrc` is pinned to prepend the nvm v24 bin to `PATH`, so login shells (including new tmux sessions started with `bash -l`) get v24 automatically. Verify with `node --version` (expect `v24.11.0`). If a shell shows v22, run `export PATH="$HOME/.nvm/versions/node/v24.11.0/bin:$PATH"` before `yarn start`/`yarn`/`yarn jest`.
 
 ### Running services
 
