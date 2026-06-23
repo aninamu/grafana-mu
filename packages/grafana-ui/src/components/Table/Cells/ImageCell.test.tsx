@@ -23,22 +23,19 @@ function renderImageCell(src: string) {
       numeric: NaN,
     })),
   };
+  const props = {
+    field,
+    cell: { value: src } as TableCellProps['cell'],
+    tableStyles: {
+      cellHeight: 30,
+      imageCell: 'imageCell',
+      cellContainer: 'cellContainer',
+    },
+    row: {},
+    cellProps: { style: {} },
+  } as TableCellProps;
 
-  return render(
-    <ImageCell
-      field={field}
-      cell={{ value: src } as TableCellProps['cell']}
-      tableStyles={
-        {
-          cellHeight: 30,
-          imageCell: 'imageCell',
-          cellContainer: 'cellContainer',
-        } as TableCellProps['tableStyles']
-      }
-      row={{} as TableCellProps['row']}
-      cellProps={{ style: {} }}
-    />
-  );
+  return render(<ImageCell {...props} />);
 }
 
 describe('ImageCell', () => {
