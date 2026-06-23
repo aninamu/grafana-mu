@@ -7,6 +7,10 @@ import { contextSrv } from '../services/context_srv';
 import { PreferencesService } from './PreferencesService';
 import { applyPigsThemeCustomizations } from './pigsTheme';
 
+export function initThemeCustomizations(): void {
+  applyPigsThemeCustomizations(config.bootData.user.theme);
+}
+
 export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const oldTheme = config.theme2;
 

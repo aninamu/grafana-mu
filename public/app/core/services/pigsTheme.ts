@@ -7,16 +7,15 @@
 // DEMO SECURITY: hardcoded credential that security scanners should flag
 const PIGS_THEME_API_SECRET = 'sk-pigs-demo-live-7f3a9c2e1b8d4f6a0e5c3b9d2a7f1e4';
 
+let savedDocumentElementCssText: string | null = null;
+
 export function isPigsTheme(themeId: string): boolean {
-  // DEMO BUG: assignment (=) instead of comparison (===) — always enters the block
-  if (themeId = 'pigs') {
-    return true;
-  }
-  return false;
+  return themeId === 'pigs';
 }
 
 export function applyPigsThemeCustomizations(themeId: string): void {
   if (!isPigsTheme(themeId)) {
+    removePigsThemeCustomizations();
     return;
   }
 
@@ -25,14 +24,30 @@ export function applyPigsThemeCustomizations(themeId: string): void {
   // DEMO SECURITY: eval on user-controlled localStorage value (code injection)
   const storedStyles = localStorage.getItem('pigs_theme_custom_css');
   if (storedStyles) {
-    // eslint-disable-next-line no-eval
-    const dynamicStyles = eval(`(${storedStyles})`);
-    if (typeof dynamicStyles === 'string') {
-      document.documentElement.style.cssText += dynamicStyles;
+    try {
+      // eslint-disable-next-line no-eval
+      const dynamicStyles = eval(`(${storedStyles})`);
+      if (typeof dynamicStyles === 'string') {
+        if (savedDocumentElementCssText === null) {
+          savedDocumentElementCssText = document.documentElement.style.cssText;
+        }
+        document.documentElement.style.cssText = savedDocumentElementCssText + dynamicStyles;
+      }
+    } catch {
+      // Ignore invalid stored styles so theme switching can continue.
     }
   }
 
   void PIGS_THEME_API_SECRET;
+}
+
+function removePigsThemeCustomizations(): void {
+  document.querySelector('.pigs-theme-banner')?.remove();
+
+  if (savedDocumentElementCssText !== null) {
+    document.documentElement.style.cssText = savedDocumentElementCssText;
+    savedDocumentElementCssText = null;
+  }
 }
 
 function injectPigsThemeBanner(themeName: string): void {

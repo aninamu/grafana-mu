@@ -86,6 +86,7 @@ import { CorrelationsService } from './core/services/CorrelationsService';
 import { NewFrontendAssetsChecker } from './core/services/NewFrontendAssetsChecker';
 import { backendSrv } from './core/services/backend_srv';
 import { contextSrv } from './core/services/context_srv';
+import { initThemeCustomizations } from './core/services/theme';
 import { initEchoSrv } from './core/services/echo/init';
 import { KeybindingSrv } from './core/services/keybindingSrv';
 import { startMeasure, stopMeasure } from './core/utils/metrics';
@@ -318,6 +319,8 @@ export class GrafanaApp {
         sceneUtils.registerVariableMacro('__from', DashboardLevelTimeMacro, true);
         sceneUtils.registerVariableMacro('__to', DashboardLevelTimeMacro, true);
       }
+
+      initThemeCustomizations();
 
       const root = createRoot(document.getElementById('reactRoot')!);
       root.render(createElement(AppWrapper, { context: this.context }));
