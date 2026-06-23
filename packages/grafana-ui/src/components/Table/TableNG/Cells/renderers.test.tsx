@@ -137,6 +137,25 @@ describe('TableNG Cells renderers', () => {
         expect(container.childNodes).toHaveLength(1);
       });
 
+      it('should resolve image cell src values under img through the Grafana public build path', () => {
+        const originalPublicPath = window.__grafana_public_path__;
+        const publicPath = 'https://grafana.fake/public/';
+        const imagePath = 'img/icons/unicons/question-circle.svg';
+        window.__grafana_public_path__ = publicPath;
+        const field = createField(FieldType.string);
+        field.display = jest.fn(() => ({
+          text: imagePath,
+          numeric: NaN,
+        }));
+
+        const { container } = renderCell(field, { type: TableCellDisplayMode.Image });
+        const img = container.querySelector('img');
+
+        expect(img).toHaveAttribute('src', `${publicPath}build/${imagePath}`);
+
+        window.__grafana_public_path__ = originalPublicPath;
+      });
+
       describe('invalid config cases', () => {
         it('should return AutoCell when cellOptions.type is undefined', () => {
           const field = createField(FieldType.string);

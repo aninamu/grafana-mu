@@ -8,6 +8,7 @@ import {
   getCellOptions,
   getDataLinksActionsTooltipUtils,
 } from '../cellUtils';
+import { getImageCellSrc } from '../imageCellUtils';
 import { TableCellDisplayMode, type TableCellProps } from '../types';
 
 const DATALINKS_HEIGHT_OFFSET = 10;
@@ -29,7 +30,7 @@ export const ImageCell = (props: TableCellProps) => {
   const img = (
     <img
       style={{ height: tableStyles.cellHeight - DATALINKS_HEIGHT_OFFSET, width: 'auto' }}
-      src={displayValue.text}
+      src={getImageCellSrc(displayValue.text)}
       className={tableStyles.imageCell}
       alt={alt}
       title={title}

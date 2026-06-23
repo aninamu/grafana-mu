@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
 
+import { getImageCellSrc } from '../../imageCellUtils';
 import { TableCellDisplayMode } from '../../types';
 import { MaybeWrapWithLink } from '../components/MaybeWrapWithLink';
 import { type ImageCellProps, type TableCellStyles } from '../types';
@@ -17,7 +18,7 @@ export const ImageCell = ({ cellOptions, field, value, rowIdx }: ImageCellProps)
 
   return (
     <MaybeWrapWithLink field={field} rowIdx={rowIdx}>
-      {error ? text : <img alt={alt} src={text} title={title} onError={() => setError(true)} />}
+      {error ? text : <img alt={alt} src={getImageCellSrc(text)} title={title} onError={() => setError(true)} />}
     </MaybeWrapWithLink>
   );
 };
