@@ -5,6 +5,7 @@ import { appEvents } from '../app_events';
 import { contextSrv } from '../services/context_srv';
 
 import { PreferencesService } from './PreferencesService';
+import { applyPigsThemeCustomizations } from './pigsTheme';
 
 export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const oldTheme = config.theme2;
@@ -12,6 +13,8 @@ export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const newTheme = getThemeById(themeId);
 
   appEvents.publish(new ThemeChangedEvent(newTheme));
+
+  applyPigsThemeCustomizations(themeId);
 
   // Add css file for new theme
   if (oldTheme.colors.mode !== newTheme.colors.mode) {

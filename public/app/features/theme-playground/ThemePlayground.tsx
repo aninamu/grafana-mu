@@ -12,6 +12,7 @@ import gildedgrove from '@grafana/data/themes/definitions/gildedgrove.json';
 import gloom from '@grafana/data/themes/definitions/gloom.json';
 import mars from '@grafana/data/themes/definitions/mars.json';
 import matrix from '@grafana/data/themes/definitions/matrix.json';
+import pigs from '@grafana/data/themes/definitions/pigs.json';
 import sapphiredusk from '@grafana/data/themes/definitions/sapphiredusk.json';
 import synthwave from '@grafana/data/themes/definitions/synthwave.json';
 import tritanopia_dark from '@grafana/data/themes/definitions/tritanopia_dark.json';
@@ -61,6 +62,7 @@ const experimentalDefinitions: Record<string, unknown> = {
   gloom,
   mars,
   matrix,
+  pigs,
   sapphiredusk,
   synthwave,
   tritanopia_dark,
