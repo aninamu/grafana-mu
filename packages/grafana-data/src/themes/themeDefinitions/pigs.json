@@ -1,0 +1,82 @@
+{
+  "name": "Pigs",
+  "id": "pigs",
+  "colors": {
+    "mode": "light",
+    "border": {
+      "weak": "rgba(255, 105, 180, 0.15)",
+      "medium": "rgba(255, 105, 180, 0.25)",
+      "strong": "rgba(255, 105, 180, 0.40)"
+    },
+    "text": {
+      "primary": "#4A2040",
+      "secondary": "#7A4A6A",
+      "disabled": "rgba(74, 32, 64, 0.5)",
+      "link": "#E91E8C",
+      "maxContrast": "#2D1028"
+    },
+    "primary": {
+      "main": "#FF69B4",
+      "text": "#E91E8C",
+      "border": "#E91E8C",
+      "name": "primary",
+      "shade": "#E91E8C",
+      "transparent": "#FF69B426",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#FF69B440"
+    },
+    "secondary": {
+      "main": "#FFF0F5",
+      "text": "#7A4A6A",
+      "border": "#FFB6C1",
+      "name": "secondary",
+      "shade": "#FFB6C1",
+      "transparent": "#FFF0F526",
+      "contrastText": "#4A2040",
+      "borderTransparent": "#FFF0F540"
+    },
+    "accent": {
+      "main": "#FF1493",
+      "text": "#E91E8C",
+      "border": "#C71585",
+      "name": "accent",
+      "shade": "#C71585",
+      "transparent": "#FF149326",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#FF149340"
+    },
+    "info": {
+      "main": "#E91E8C"
+    },
+    "success": {
+      "main": "#FF69B4"
+    },
+    "warning": {
+      "main": "#FFB6C1"
+    },
+    "background": {
+      "canvas": "#FFF5F8",
+      "page": "#FFFAFC",
+      "primary": "#FFFFFF",
+      "secondary": "#FFF0F5",
+      "elevated": "#FFFFFF"
+    },
+    "action": {
+      "hover": "rgba(255, 105, 180, 0.12)",
+      "selected": "rgba(255, 105, 180, 0.24)",
+      "selectedBorder": "#FF69B4",
+      "focus": "rgba(255, 105, 180, 0.40)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(122, 74, 106, 0.5)",
+      "disabledBackground": "rgba(255, 105, 180, 0.06)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #FF69B4 0%, #FF1493 100%)",
+      "brandVertical": "linear-gradient(0deg, #FF69B4 0%, #FF1493 100%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}
