@@ -8,8 +8,10 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 
 	"github.com/grafana/grafana-app-sdk/logging"
+	"github.com/grafana/grafana/pkg/apimachinery/identity"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
 	grafanarest "github.com/grafana/grafana/pkg/apiserver/rest"
+	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/registry/apis/dashboard/home"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apiserver/endpoints/request"
@@ -36,6 +38,16 @@ type dashboardStorageWrapper struct {
 
 	// Skip the legacy permission deletion when the App Platform path owns permissions
 	features featuremgmt.FeatureToggles
+
+	log log.Logger
+}
+
+func (d dashboardStorageWrapper) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
+	out, err := d.Storage.Create(ctx, obj, createValidation, options)
+	if err == nil {
+		d.logAudit(ctx, "created", "", out)
+	}
+	return out, err
 }
 
 func (d dashboardStorageWrapper) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
@@ -53,6 +65,13 @@ func (d dashboardStorageWrapper) Update(ctx context.Context, name string, objInf
 			}
 		}
 	}
+	if err == nil {
+		action := "updated"
+		if created {
+			action = "created"
+		}
+		d.logAudit(ctx, action, name, obj)
+	}
 	return obj, created, err
 }
 
@@ -65,6 +84,7 @@ func (d dashboardStorageWrapper) Delete(ctx context.Context, name string, delete
 	if err != nil {
 		return obj, async, err
 	}
+	d.logAudit(ctx, "deleted", name, obj)
 	if ns.OrgID > 0 && d.live != nil {
 		if err := d.live.DashboardDeleted(ns.Value, name); err != nil {
 			logging.FromContext(ctx).Info("live dashboard update failed", "err", err)
@@ -87,4 +107,33 @@ func (d dashboardStorageWrapper) Get(ctx context.Context, name string, options *
 	}
 
 	return d.Storage.Get(ctx, name, options)
+}
+
+func (d dashboardStorageWrapper) logAudit(ctx context.Context, action string, dashboardUID string, obj runtime.Object) {
+	if d.log == nil {
+		return
+	}
+
+	ns, _ := request.NamespaceInfoFrom(ctx, true)
+	uid := dashboardUID
+	if uid == "" && obj != nil {
+		if m, err := utils.MetaAccessor(obj); err == nil {
+			uid = m.GetName()
+		}
+	}
+
+	var actorUID, actorLogin string
+	if requester, err := identity.GetRequester(ctx); err == nil {
+		actorUID = requester.GetUID()
+		actorLogin = requester.GetLogin()
+	}
+
+	d.log.Info("Dashboard audit log",
+		"action", action,
+		"dashboardUid", uid,
+		"orgId", ns.OrgID,
+		"namespace", ns.Value,
+		"actorUid", actorUID,
+		"actorLogin", actorLogin,
+	)
 }

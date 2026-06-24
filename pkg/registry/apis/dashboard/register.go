@@ -44,6 +44,7 @@ import (
 	grafanaregistry "github.com/grafana/grafana/pkg/apiserver/registry/generic"
 	"github.com/grafana/grafana/pkg/configprovider"
 	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/registry/apis/dashboard/home"
 	"github.com/grafana/grafana/pkg/registry/apis/dashboard/legacy"
@@ -979,6 +980,7 @@ func (b *DashboardsAPIBuilder) storageForVersion(
 		dashboardPermissionsSvc: b.dashboardPermissionsSvc,
 		live:                    b.dashboardActivityChannel,
 		features:                b.features,
+		log:                     log.New("dashboard.audit"),
 	}
 
 	// Register the DTO endpoint that will consolidate all dashboard bits
