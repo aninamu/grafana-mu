@@ -9,8 +9,10 @@ import { ScrollContainer, Stack, Tab, TabContent, TabsBar, useStyles2 } from '@g
 import { SETUPGUIDE_PLUGIN_ID } from 'app/core/constants';
 import { getMostUsedDashboards, isMostUsedAvailable } from 'app/features/browse-dashboards/api/mostUsed';
 import { getRecentlyViewedDashboards } from 'app/features/browse-dashboards/api/recentlyViewed';
+import { isRootFolderUID } from 'app/features/search/constants';
 import { useDashboardLocationInfo } from 'app/features/search/hooks/useDashboardLocationInfo';
 import { getGrafanaSearcher } from 'app/features/search/service/searcher';
+import { type DashboardQueryResult } from 'app/features/search/service/types';
 
 import { tabChanged } from '../analytics/main';
 
@@ -95,7 +97,11 @@ export function DashboardTabs() {
   const initialLoading = recentLoading || starredLoading || (mostUsedAvailable && mostUsedLoading);
 
   const hasDashboards = hasRecent || hasMostUsed || hasStarred;
-  const { foldersByUid } = useDashboardLocationInfo(hasDashboards);
+  const folderUIDs = useMemo(
+    () => getFolderUIDs([recentDashboards, mostUsedDashboards, starredDashboards]),
+    [recentDashboards, mostUsedDashboards, starredDashboards]
+  );
+  const { foldersByUid } = useDashboardLocationInfo(hasDashboards, folderUIDs);
 
   const { components: extensionComponents } = usePluginComponents<HomepageTabExtensionProps>({
     extensionPointId: PluginExtensionPoints.HomepageTabs,
@@ -236,6 +242,22 @@ export function DashboardTabs() {
         ))}
     </Stack>
   );
+}
+
+function getFolderUIDs(dashboardGroups: Array<DashboardQueryResult[] | undefined>) {
+  const folderUIDs = new Set<string>();
+  for (const dashboards of dashboardGroups) {
+    for (const dashboard of dashboards ?? []) {
+      if (
+        typeof dashboard.location === 'string' &&
+        !isRootFolderUID(dashboard.location) &&
+        dashboard.location !== 'sharedwithme'
+      ) {
+        folderUIDs.add(dashboard.location);
+      }
+    }
+  }
+  return Array.from(folderUIDs);
 }
 
 const getStyles = (theme: GrafanaTheme2) => ({

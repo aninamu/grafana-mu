@@ -1,3 +1,5 @@
+import { http, HttpResponse } from 'msw';
+
 import { config, setBackendSrv } from '@grafana/runtime';
 import { getCustomSearchHandler } from '@grafana/test-utils/handlers';
 import server, { setupMockServer } from '@grafana/test-utils/server';
@@ -14,6 +16,59 @@ setBackendSrv(backendSrv);
 setupMockServer();
 
 describe('Unified Storage Searcher', () => {
+  it('loads all folder location info only when explicitly requested', async () => {
+    const requests: string[] = [];
+    server.use(
+      http.get('/apis/dashboard.grafana.app/v0alpha1/namespaces/default/search', ({ request }) => {
+        const url = new URL(request.url);
+        requests.push(url.search);
+
+        return HttpResponse.json({
+          totalHits: 1,
+          hits: [{ name: 'folder1', title: 'Folder 1', resource: 'folders' }],
+        });
+      })
+    );
+
+    const searcher = new UnifiedSearcher();
+
+    expect(requests).toEqual([]);
+
+    const locationInfo = await searcher.getLocationInfo();
+
+    expect(locationInfo.folder1.name).toBe('Folder 1');
+    expect(requests).toEqual(['?type=folder&limit=100000']);
+  });
+
+  it('loads only needed folder location info for dashboard search results', async () => {
+    const requests: string[] = [];
+    server.use(
+      http.get('/apis/dashboard.grafana.app/v0alpha1/namespaces/default/search', ({ request }) => {
+        const url = new URL(request.url);
+        requests.push(url.search);
+
+        if (url.searchParams.getAll('type').includes('folder')) {
+          return HttpResponse.json({
+            totalHits: 1,
+            hits: [{ name: 'folder1', title: 'Folder 1', resource: 'folders' }],
+          });
+        }
+
+        return HttpResponse.json({
+          totalHits: 1,
+          hits: [{ name: 'dashboard1', title: 'Dashboard 1', resource: 'dashboards', folder: 'folder1' }],
+        });
+      })
+    );
+
+    const searcher = new UnifiedSearcher();
+    const response = await searcher.search({ query: '*', kind: ['dashboard'], uid: ['dashboard1'], limit: 1 });
+    const locationInfo = response.view.dataFrame.meta?.custom?.locationInfo;
+
+    expect(locationInfo?.folder1.name).toBe('Folder 1');
+    expect(requests).toEqual(['?query=*&limit=1&type=dashboard&name=dashboard1', '?type=folder&limit=1&name=folder1']);
+  });
+
   it('should perform search with basic query', async () => {
     const query: SearchQuery = {
       query: '*',

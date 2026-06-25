@@ -67,11 +67,8 @@ export type SearchAPIResponse = {
 const folderViewSort = 'name_sort';
 
 export class UnifiedSearcher implements GrafanaSearcher {
-  locationInfo: Promise<Record<string, LocationInfo>>;
-
-  constructor() {
-    this.locationInfo = loadLocationInfo();
-  }
+  private locationInfo?: Promise<Record<string, LocationInfo>>;
+  private locationInfoByUid: Record<string, LocationInfo> = createBaseLocationInfo();
 
   async search(query: SearchQuery): Promise<QueryResponse> {
     if (query.facet?.length) {
@@ -120,8 +117,29 @@ export class UnifiedSearcher implements GrafanaSearcher {
     return resp.facets?.tags?.terms || [];
   }
 
-  async getLocationInfo() {
-    return this.locationInfo;
+  async getLocationInfo(folderUIDs?: string[]) {
+    if (!folderUIDs) {
+      if (!this.locationInfo) {
+        this.locationInfo = loadLocationInfo().then((locationInfo) => {
+          this.locationInfoByUid = locationInfo;
+          return this.locationInfoByUid;
+        });
+      }
+      return this.locationInfo;
+    }
+
+    const folderUIDsToLoad = getFolderUIDsToLoad(folderUIDs);
+    if (folderUIDsToLoad.length === 0) {
+      return this.locationInfoByUid;
+    }
+
+    const missingFolderUIDs = folderUIDsToLoad.filter((uid) => this.locationInfoByUid[uid] === undefined);
+    if (missingFolderUIDs.length > 0) {
+      const locationInfo = await loadLocationInfo(missingFolderUIDs);
+      Object.assign(this.locationInfoByUid, locationInfo);
+    }
+
+    return this.locationInfoByUid;
   }
 
   // TODO: Implement this correctly
@@ -168,7 +186,7 @@ export class UnifiedSearcher implements GrafanaSearcher {
       locationInfo: customMeta?.locationInfo ?? {},
       sortBy: customMeta?.sortBy,
     };
-    meta.locationInfo = await this.locationInfo;
+    meta.locationInfo = await this.getLocationInfo(getFolderUIDsFromHits(rsp.hits));
 
     // Update the DataFrame meta to point to the typed meta object
     if (first.meta) {
@@ -248,24 +266,16 @@ export class UnifiedSearcher implements GrafanaSearcher {
     // TODO: use API client for this
     const rsp = await getBackendSrv().get<SearchAPIResponse>(uri);
 
-    // we check the locationInfo staleness by whether we have all the folders info. This does not mean though
-    // that we actually have the latest info about the folders (like changed labels). Also we will never actually
-    // have folder access to folders in "shared with me" folder. We deal with it here, but it triggers a
-    // loadLocationInfo that is unneccessary.
+    // Populate folder metadata only for parents referenced by this result set. Folders still missing after that
+    // targeted lookup are treated as "Shared with me".
 
-    const isFolderCacheStale = await this.isFolderCacheStale(rsp.hits);
-    if (!isFolderCacheStale) {
-      return rsp;
-    }
-    // sync the location info (folders)
-    this.locationInfo = loadLocationInfo();
-    // recheck for missing folders
-    const hasMissing = await this.isFolderCacheStale(rsp.hits);
-    if (!hasMissing) {
+    await this.getLocationInfo(getFolderUIDsFromHits(rsp.hits));
+    const hasMissingFolders = await this.isFolderCacheStale(rsp.hits);
+    if (!hasMissingFolders) {
       return rsp;
     }
 
-    const locationInfo = await this.locationInfo;
+    const locationInfo = await this.getLocationInfo(getFolderUIDsFromHits(rsp.hits));
     const hits = rsp.hits.map((hit) => {
       // Root-parented hits arrive with "" or "general" — neither lives in
       // locationInfo, since the root folder is synthetic. Collapse to
@@ -287,7 +297,7 @@ export class UnifiedSearcher implements GrafanaSearcher {
   }
 
   async isFolderCacheStale(hits: SearchHit[]): Promise<boolean> {
-    const locationInfo = await this.locationInfo;
+    const locationInfo = this.locationInfoByUid;
     return hits.some((hit) => {
       // Root-parented hits ("" or "general") never appear in locationInfo —
       // skip them so we don't reload the cache and remap them to "Shared with me".
@@ -457,26 +467,49 @@ export function toDashboardResults(rsp: SearchAPIResponse, sort: string): DataFr
   return frame;
 }
 
-async function loadLocationInfo(): Promise<Record<string, LocationInfo>> {
+function getFolderUIDsFromHits(hits: SearchHit[]): string[] {
+  return Array.from(
+    new Set(
+      hits
+        .map((hit) => hit.folder)
+        .filter((uid): uid is string => Boolean(uid) && !isRootFolderUID(uid) && uid !== 'sharedwithme')
+    )
+  );
+}
+
+function getFolderUIDsToLoad(folderUIDs: string[]): string[] {
+  return Array.from(new Set(folderUIDs.filter((uid) => !isRootFolderUID(uid) && uid !== 'sharedwithme')));
+}
+
+function createBaseLocationInfo(): Record<string, LocationInfo> {
+  return {
+    general: {
+      kind: 'folder',
+      name: 'Dashboards',
+      url: `${config.appSubUrl}/dashboards`,
+    },
+    sharedwithme: {
+      kind: 'sharedwithme',
+      name: 'Shared with me',
+      url: '',
+    },
+  };
+}
+
+async function loadLocationInfo(folderUIDs?: string[]): Promise<Record<string, LocationInfo>> {
   // TODO: use proper pagination and API client for search.
-  // TODO: This tries to load all the folders upfront even though it may not be neccessary if user does not render all
-  //  the search results.
-  const uri = `${searchURI}?type=folder&limit=100000`;
+  const query = new URLSearchParams();
+  query.append('type', 'folder');
+  query.append('limit', String(folderUIDs?.length || 100000));
+  for (const uid of folderUIDs ?? []) {
+    query.append('name', uid);
+  }
+
+  const uri = `${searchURI}?${query.toString()}`;
   const rsp = getBackendSrv()
     .get<SearchAPIResponse>(uri)
     .then((rsp) => {
-      const locationInfo: Record<string, LocationInfo> = {
-        general: {
-          kind: 'folder',
-          name: 'Dashboards',
-          url: `${config.appSubUrl}/dashboards`,
-        }, // share location info with everyone
-        sharedwithme: {
-          kind: 'sharedwithme',
-          name: 'Shared with me',
-          url: '',
-        },
-      };
+      const locationInfo = createBaseLocationInfo();
       for (const hit of rsp.hits) {
         locationInfo[hit.name] = {
           name: hit.title,
