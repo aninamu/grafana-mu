@@ -228,6 +228,7 @@ export class UnifiedSearcher implements GrafanaSearcher {
         // We append the frames and align the fields here, but if there are new fields, view won't know about them
         // and won't be accessible by doing `view.get(0).newField` for example
         appendFrame(view.dataFrame, frame);
+        Object.assign(meta.locationInfo, await this.getLocationInfo(getFolderUIDsFromHits(resp.hits)));
 
         // Add all the location lookup info
         const submeta = frame.meta?.custom;

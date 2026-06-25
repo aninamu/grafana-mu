@@ -153,6 +153,28 @@ describe('Unified Storage Searcher', () => {
     // expect(response.view.get(1).description).toBe('foobar');
   });
 
+  it('adds targeted folder location info for paged dashboard search results', async () => {
+    server.use(
+      getCustomSearchHandler([
+        { name: 'folder1', title: 'Folder 1', resource: 'folders' },
+        { name: 'folder2', title: 'Folder 2', resource: 'folders' },
+        { name: 'dashboard1', title: 'Dashboard 1', resource: 'dashboards', folder: 'folder1' },
+        { name: 'dashboard2', title: 'Dashboard 2', resource: 'dashboards', folder: 'folder2' },
+      ])
+    );
+
+    const searcher = new UnifiedSearcher();
+    const response = await searcher.search({ query: '*', kind: ['dashboard'], limit: 1 });
+
+    expect(response.view.dataFrame.meta?.custom?.locationInfo.folder1.name).toBe('Folder 1');
+    expect(response.view.dataFrame.meta?.custom?.locationInfo.folder2).toBeUndefined();
+
+    await response.loadMoreItems(1);
+
+    expect(response.view.length).toBe(2);
+    expect(response.view.dataFrame.meta?.custom?.locationInfo.folder2.name).toBe('Folder 2');
+  });
+
   it('should filter search results by ownerReference', async () => {
     server.use(
       getCustomSearchHandler([
