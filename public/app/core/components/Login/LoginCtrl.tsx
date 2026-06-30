@@ -45,22 +45,27 @@ const LoginCtrl = memo(({ resetCode, children }: Props) => {
     getBootDataErrMessage(config.loginError)
   );
 
-  const toGrafana = useCallback(() => {
-    if (config.featureToggles.useSessionStorageForRedirection) {
-      window.location.assign(config.appSubUrl + '/');
-      return;
-    }
+  const toGrafana = useCallback(
+    (loginResult?: LoginDTO) => {
+      const redirectUrl = loginResult?.redirectUrl ?? result?.redirectUrl;
 
-    if (result?.redirectUrl) {
-      if (config.appSubUrl !== '' && !result.redirectUrl.startsWith(config.appSubUrl)) {
-        window.location.assign(config.appSubUrl + result.redirectUrl);
-      } else {
-        window.location.assign(result.redirectUrl);
+      if (config.featureToggles.useSessionStorageForRedirection) {
+        window.location.assign(config.appSubUrl + '/');
+        return;
       }
-    } else {
-      window.location.assign(config.appSubUrl + '/');
-    }
-  }, [result]);
+
+      if (redirectUrl) {
+        if (config.appSubUrl !== '' && !redirectUrl.startsWith(config.appSubUrl)) {
+          window.location.assign(config.appSubUrl + redirectUrl);
+        } else {
+          window.location.assign(redirectUrl);
+        }
+      } else {
+        window.location.assign(config.appSubUrl + '/');
+      }
+    },
+    [result]
+  );
 
   const changePassword = useCallback(
     (password: string) => {
@@ -109,7 +114,7 @@ const LoginCtrl = memo(({ resetCode, children }: Props) => {
         .then((result) => {
           setResult(result);
           if (formModel.password !== 'admin' || config.ldapEnabled || config.authProxyEnabled) {
-            toGrafana();
+            toGrafana(result);
             return;
           } else {
             changeView(formModel.password === 'admin');

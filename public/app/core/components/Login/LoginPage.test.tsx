@@ -96,6 +96,25 @@ describe('Login Page', () => {
     expect(window.location.assign).toHaveBeenCalledWith('/');
   });
 
+  it('should navigate to redirectUrl from login response', async () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        assign: jest.fn(),
+      },
+    });
+    postMock.mockResolvedValueOnce({ message: 'Logged in', redirectUrl: '/d/test-dashboard' });
+    render(<LoginPage />);
+
+    await userEvent.type(screen.getByLabelText('Email or username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'test');
+    fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
+
+    await waitFor(() =>
+      expect(postMock).toHaveBeenCalledWith('/login', { password: 'test', user: 'admin' }, { showErrorAlert: false })
+    );
+    expect(window.location.assign).toHaveBeenCalledWith('/d/test-dashboard');
+  });
+
   it('renders social logins correctly', () => {
     runtimeMock.config.oauth = {
       okta: {
