@@ -64,4 +64,39 @@ describe('applyAccentFromUrl', () => {
 
     expect(themed.colors.primary.main.toLowerCase()).toBe('#ffa500');
   });
+
+  it('preserves semantic colors and visualization palettes when applying an accent', () => {
+    Object.defineProperty(window, 'location', {
+      value: { search: '?accent=%23ff0000' },
+      writable: true,
+    });
+
+    const baseTheme = createTheme({
+      colors: {
+        mode: 'dark',
+        success: { main: '#2EC4B6' },
+        error: { main: '#E8467C', text: '#F57098' },
+        warning: { main: '#FADE2A' },
+      },
+      visualization: {
+        hues: [
+          {
+            name: 'green',
+            shades: [{ color: '#2EC4B6', name: 'green', primary: true }],
+          },
+        ],
+        palette: ['green', 'red'],
+      },
+    });
+
+    const themed = applyAccentFromUrl(baseTheme);
+
+    expect(themed.colors.primary.main).toBe('#ff0000');
+    expect(themed.colors.success.main).toBe('#2EC4B6');
+    expect(themed.colors.error.main).toBe('#E8467C');
+    expect(themed.colors.error.text).toBe('#F57098');
+    expect(themed.colors.warning.main).toBe('#FADE2A');
+    expect(themed.visualization.getColorByName('green')).toBe('#2EC4B6');
+    expect(themed.visualization.palette).toEqual(['green', 'red']);
+  });
 });

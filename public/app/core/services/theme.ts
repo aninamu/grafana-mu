@@ -1,7 +1,8 @@
+import tinycolor from 'tinycolor2';
+
 import { createTheme, type GrafanaTheme2 } from '@grafana/data';
 import { getThemeById } from '@grafana/data/internal';
 import { config, ThemeChangedEvent } from '@grafana/runtime';
-import tinycolor from 'tinycolor2';
 
 import { appEvents } from '../app_events';
 import { contextSrv } from '../services/context_srv';
@@ -22,6 +23,7 @@ function applyAccentToTheme(theme: GrafanaTheme2, accent: string): GrafanaTheme2
   const color = tinycolor(accent);
   const main = color.toHexString();
   const lightAccent = color.lighten(20).toHexString();
+  const { palette, hues } = theme.visualization;
 
   return createTheme({
     name: theme.name,
@@ -38,11 +40,12 @@ function applyAccentToTheme(theme: GrafanaTheme2, accent: string): GrafanaTheme2
       },
       background: theme.colors.background,
       border: theme.colors.border,
-      secondary: {
-        main: theme.colors.secondary.main,
-        text: theme.colors.secondary.text,
-        border: theme.colors.secondary.border,
-      },
+      tertiary: theme.colors.tertiary,
+      info: theme.colors.info,
+      error: theme.colors.error,
+      success: theme.colors.success,
+      warning: theme.colors.warning,
+      secondary: theme.colors.secondary,
       action: {
         ...theme.colors.action,
         selectedBorder: main,
@@ -58,7 +61,9 @@ function applyAccentToTheme(theme: GrafanaTheme2, accent: string): GrafanaTheme2
       contrastThreshold: theme.colors.contrastThreshold,
       hoverFactor: theme.colors.hoverFactor,
       tonalOffset: theme.colors.tonalOffset,
+      scrollbar: theme.colors.scrollbar,
     },
+    visualization: { palette, hues },
   });
 }
 
