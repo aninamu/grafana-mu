@@ -1,26 +1,89 @@
+import { createTheme, type GrafanaTheme2 } from '@grafana/data';
 import { getThemeById } from '@grafana/data/internal';
 import { config, ThemeChangedEvent } from '@grafana/runtime';
+import tinycolor from 'tinycolor2';
 
 import { appEvents } from '../app_events';
 import { contextSrv } from '../services/context_srv';
 
 import { PreferencesService } from './PreferencesService';
 
-export function applyAccentFromUrl() {
+function getValidAccentFromUrl(): string | null {
   const accent = new URLSearchParams(window.location.search).get('accent');
-  if (accent) {
-    const style = document.createElement('style');
-    style.innerHTML = `:root { --cursor-accent: ${accent}; }`;
-    document.head.appendChild(style);
+  if (!accent) {
+    return null;
   }
+
+  const color = tinycolor(accent);
+  return color.isValid() ? color.toString() : null;
+}
+
+function applyAccentToTheme(theme: GrafanaTheme2, accent: string): GrafanaTheme2 {
+  const color = tinycolor(accent);
+  const main = color.toHexString();
+  const lightAccent = color.lighten(20).toHexString();
+
+  return createTheme({
+    name: theme.name,
+    colors: {
+      mode: theme.colors.mode,
+      primary: { main },
+      accent: { main },
+      text: {
+        primary: theme.colors.text.primary,
+        secondary: theme.colors.text.secondary,
+        disabled: theme.colors.text.disabled,
+        link: main,
+        maxContrast: theme.colors.text.maxContrast,
+      },
+      background: theme.colors.background,
+      border: theme.colors.border,
+      secondary: {
+        main: theme.colors.secondary.main,
+        text: theme.colors.secondary.text,
+        border: theme.colors.secondary.border,
+      },
+      action: {
+        ...theme.colors.action,
+        selectedBorder: main,
+        hover: color.setAlpha(0.16).toRgbString(),
+        selected: color.setAlpha(0.12).toRgbString(),
+        focus: color.setAlpha(0.16).toRgbString(),
+        disabledBackground: color.setAlpha(0.08).toRgbString(),
+      },
+      gradients: {
+        brandHorizontal: `linear-gradient(270deg, ${main} 0%, ${lightAccent} 100%)`,
+        brandVertical: `linear-gradient(0.01deg, ${main} 0.01%, ${lightAccent} 99.99%)`,
+      },
+      contrastThreshold: theme.colors.contrastThreshold,
+      hoverFactor: theme.colors.hoverFactor,
+      tonalOffset: theme.colors.tonalOffset,
+    },
+  });
+}
+
+export function applyAccentFromUrl(theme: GrafanaTheme2 = config.theme2): GrafanaTheme2 {
+  const accent = getValidAccentFromUrl();
+  if (!accent) {
+    return theme;
+  }
+
+  return applyAccentToTheme(theme, accent);
+}
+
+export function initAccentFromUrl() {
+  const accent = getValidAccentFromUrl();
+  if (!accent) {
+    return;
+  }
+
+  appEvents.publish(new ThemeChangedEvent(applyAccentFromUrl()));
 }
 
 export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const oldTheme = config.theme2;
 
-  const newTheme = getThemeById(themeId);
-
-  applyAccentFromUrl();
+  const newTheme = applyAccentFromUrl(getThemeById(themeId));
 
   appEvents.publish(new ThemeChangedEvent(newTheme));
 
