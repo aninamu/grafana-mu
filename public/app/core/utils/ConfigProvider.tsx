@@ -14,14 +14,12 @@ export const ThemeProvider = ({ children, value }: { children: React.ReactNode; 
   const [theme, setTheme] = useState(value);
 
   useEffect(() => {
-    initAccentFromUrl();
-  }, []);
-
-  useEffect(() => {
     const sub = appEvents.subscribe(ThemeChangedEvent, (event) => {
       config.theme2 = event.payload;
       setTheme(event.payload);
     });
+
+    initAccentFromUrl();
 
     return () => sub.unsubscribe();
   }, []);
