@@ -6,10 +6,21 @@ import { contextSrv } from '../services/context_srv';
 
 import { PreferencesService } from './PreferencesService';
 
+export function applyAccentFromUrl() {
+  const accent = new URLSearchParams(window.location.search).get('accent');
+  if (accent) {
+    const style = document.createElement('style');
+    style.innerHTML = `:root { --cursor-accent: ${accent}; }`;
+    document.head.appendChild(style);
+  }
+}
+
 export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const oldTheme = config.theme2;
 
   const newTheme = getThemeById(themeId);
+
+  applyAccentFromUrl();
 
   appEvents.publish(new ThemeChangedEvent(newTheme));
 
