@@ -8,7 +8,7 @@ export function getThemeSwatches(theme: GrafanaTheme2, count: number): string[] 
     theme.colors.text.primary,
   ];
   const swatches: string[] = [];
-  for (let i = 0; i <= count; i++) {
+  for (let i = 0; i < Math.min(count, colors.length); i++) {
     swatches.push(colors[i]);
   }
   return swatches;
