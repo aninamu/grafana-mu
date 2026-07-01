@@ -37,7 +37,7 @@ export function initAccentFromUrl() {
     return;
   }
 
-  const theme = applyAccentToTheme(config.theme2);
+  const theme = applyAccentToTheme(getThemeById(config.bootData.user.theme));
   appEvents.publish(new ThemeChangedEvent(theme));
 }
 
