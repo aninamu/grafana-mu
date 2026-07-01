@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as React from 'react';
 import { SkeletonTheme } from 'react-loading-skeleton';
 
@@ -12,6 +12,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 
 export const ThemeProvider = ({ children, value }: { children: React.ReactNode; value: GrafanaTheme2 }) => {
   const [theme, setTheme] = useState(value);
+  const isInitialValue = useRef(true);
 
   useEffect(() => {
     const sub = appEvents.subscribe(ThemeChangedEvent, (event) => {
@@ -25,6 +26,10 @@ export const ThemeProvider = ({ children, value }: { children: React.ReactNode; 
   }, []);
 
   useEffect(() => {
+    if (isInitialValue.current) {
+      isInitialValue.current = false;
+      return;
+    }
     setTheme(value);
   }, [value]);
 
