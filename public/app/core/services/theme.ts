@@ -1,3 +1,4 @@
+import { type GrafanaTheme2 } from '@grafana/data';
 import { getThemeById } from '@grafana/data/internal';
 import { config, ThemeChangedEvent } from '@grafana/runtime';
 
@@ -6,21 +7,44 @@ import { contextSrv } from '../services/context_srv';
 
 import { PreferencesService } from './PreferencesService';
 
-export function applyAccentFromUrl() {
+const HEX_COLOR_PATTERN = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/;
+
+function getAccentFromUrl(): string | undefined {
   const accent = new URLSearchParams(window.location.search).get('accent');
-  if (accent) {
-    const style = document.createElement('style');
-    style.innerHTML = `:root { --cursor-accent: ${accent}; }`;
-    document.head.appendChild(style);
+  if (accent && HEX_COLOR_PATTERN.test(accent)) {
+    return accent;
   }
+  return undefined;
+}
+
+function applyAccentToTheme(theme: GrafanaTheme2): GrafanaTheme2 {
+  const accent = getAccentFromUrl();
+  if (!accent) {
+    return theme;
+  }
+
+  theme.colors.primary.main = accent;
+  theme.colors.accent.main = accent;
+  theme.colors.text.link = accent;
+  theme.colors.action.selectedBorder = accent;
+
+  return theme;
+}
+
+export function initAccentFromUrl() {
+  const accent = getAccentFromUrl();
+  if (!accent) {
+    return;
+  }
+
+  const theme = applyAccentToTheme(config.theme2);
+  appEvents.publish(new ThemeChangedEvent(theme));
 }
 
 export async function changeTheme(themeId: string, runtimeOnly?: boolean) {
   const oldTheme = config.theme2;
 
-  const newTheme = getThemeById(themeId);
-
-  applyAccentFromUrl();
+  const newTheme = applyAccentToTheme(getThemeById(themeId));
 
   appEvents.publish(new ThemeChangedEvent(newTheme));
 

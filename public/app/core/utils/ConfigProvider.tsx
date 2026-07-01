@@ -6,6 +6,7 @@ import { type GrafanaTheme2, ThemeContext } from '@grafana/data';
 import { ThemeChangedEvent, config } from '@grafana/runtime';
 
 import { appEvents } from '../app_events';
+import { initAccentFromUrl } from '../services/theme';
 
 import 'react-loading-skeleton/dist/skeleton.css';
 
@@ -17,6 +18,8 @@ export const ThemeProvider = ({ children, value }: { children: React.ReactNode; 
       config.theme2 = event.payload;
       setTheme(event.payload);
     });
+
+    initAccentFromUrl();
 
     return () => sub.unsubscribe();
   }, []);
