@@ -1,0 +1,33 @@
+---
+description: Wrap returned Go errors with fmt.Errorf and contextual messages
+globs: pkg/**/*.go, apps/**/*.go
+alwaysApply: false
+---
+
+# Go error wrapping
+
+When a function returns an error from another call, wrap it with `fmt.Errorf` using `%w` and a short contextual message describing what failed. Never return a bare upstream error.
+
+```go
+// ❌ BAD — bare return
+if err != nil {
+    return err
+}
+
+// ❌ BAD — no context
+if err != nil {
+    return fmt.Errorf("%w", err)
+}
+
+// ✅ GOOD — context + error chain preserved
+if err != nil {
+    return fmt.Errorf("fetching secure value: %w", err)
+}
+```
+
+## Guidelines
+
+- Use `%w` (not `%v`) so callers can use `errors.Is` and `errors.As`.
+- Keep messages lowercase, concise, and action-oriented (e.g. `"inserting row: %w"`, `"watch, get latest resource version: %w"`).
+- Wrap at each layer that adds meaningful context; avoid repeating the same message at every level.
+- Returning a package-level sentinel error (e.g. `ErrNotFound`) is fine when that sentinel is the intended API contract — do not wrap it again just to add noise.

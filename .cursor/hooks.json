@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python3 .cursor/hooks/dangerous_shell_guard.py",
+        "failClosed": true
+      },
+      {
+        "command": "python3 .cursor/hooks/test_command_nudge.py"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "python3 .cursor/hooks/post_write_reminders.py"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "python3 .cursor/hooks/secret_prompt_check.py",
+        "matcher": "UserPromptSubmit",
+        "failClosed": true
+      }
+    ]
+  }
+}
