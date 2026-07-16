@@ -73,7 +73,6 @@ public/css/*.min.css
 .vscode/
 !.vscode/launch.json
 .vs/
-.cursor/
 .devcontainer/
 .claude/
 
