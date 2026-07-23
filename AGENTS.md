@@ -149,7 +149,7 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 
 ### Prerequisites
 
-- **Node.js v24.x** (see `.nvmrc` for exact version). Use `nvm install` / `nvm use` to match.
+- **Node.js v24.x** (see `.nvmrc` for exact version). The VM injects a v22 `node` at `/exec-daemon/node` that sits ahead of nvm on `PATH`, so `nvm use` alone is **not** enough — you must explicitly prepend nvm's bin: `export PATH="$HOME/.nvm/versions/node/$(cat .nvmrc)/bin:$PATH"`. Verify with `node --version` (must print the `.nvmrc` version).
 - **Go 1.26.4** (see `go.mod`). Pre-installed in the VM.
 - **Yarn 4.11.0** via corepack (bundled in `.yarn/releases/`). Run `corepack enable` if `yarn` is not found.
 - **GCC** required for CGo/SQLite compilation of the backend.
@@ -164,4 +164,6 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 
 - **Frontend tests**: The `yarn test` script includes `--watch` by default. Always use `yarn jest --no-watch` or add `--watchAll=false` to run tests once and exit.
 - **Backend tests**: Some packages (e.g. `pkg/api/`) have slow test compilation (~2 min) due to large dependency graphs. Use targeted test runs with `-run TestName` where possible.
+- **Node heap for typecheck/build**: `yarn typecheck` (and other heavy webpack/tsc runs) OOMs at Node's default ~4GB heap. Export `NODE_OPTIONS="--max-old-space-size=8192"` before running them. `yarn start` also benefits from this.
+- **Plugin signature egress**: On startup the backend logs `Error downloading plugin manifest keys ... grafana.com/api/plugins/ci/keys` because outbound egress to `grafana.com` is restricted. This is non-fatal — the backend still comes up healthy (`/api/health` → 200).
 - All standard build/test/lint commands are documented in the Commands section above.
