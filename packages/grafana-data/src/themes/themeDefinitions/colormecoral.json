@@ -1,0 +1,82 @@
+{
+  "name": "Color me coral",
+  "id": "colormecoral",
+  "colors": {
+    "mode": "light",
+    "border": {
+      "weak": "rgba(51, 49, 46, 0.12)",
+      "medium": "rgba(51, 49, 46, 0.20)",
+      "strong": "rgba(51, 49, 46, 0.30)"
+    },
+    "text": {
+      "primary": "#33312E",
+      "secondary": "#5C574F",
+      "disabled": "rgba(51, 49, 46, 0.5)",
+      "link": "#BC6266",
+      "maxContrast": "#000000"
+    },
+    "primary": {
+      "main": "#BC6266",
+      "text": "#BC6266",
+      "border": "#A85458",
+      "name": "primary",
+      "shade": "#A85458",
+      "transparent": "#BC626626",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#BC626640"
+    },
+    "secondary": {
+      "main": "#FFFFFF",
+      "text": "#5C574F",
+      "border": "#D3C4B3",
+      "name": "secondary",
+      "shade": "#D3C4B3",
+      "transparent": "#FFFFFF26",
+      "contrastText": "#33312E",
+      "borderTransparent": "#FFFFFF40"
+    },
+    "accent": {
+      "main": "#D27D54",
+      "text": "#D27D54",
+      "border": "#B96A45",
+      "name": "accent",
+      "shade": "#B96A45",
+      "transparent": "#D27D5426",
+      "contrastText": "#FFFFFF",
+      "borderTransparent": "#D27D5440"
+    },
+    "info": {
+      "main": "#BC6266"
+    },
+    "success": {
+      "main": "#4CAF50"
+    },
+    "warning": {
+      "main": "#D27D54"
+    },
+    "background": {
+      "canvas": "#FBF6F1",
+      "page": "#FFFDFB",
+      "primary": "#FFFFFF",
+      "secondary": "#F5E7DF",
+      "elevated": "#FFFFFF"
+    },
+    "action": {
+      "hover": "rgba(211, 196, 179, 0.24)",
+      "selected": "rgba(206, 132, 144, 0.28)",
+      "selectedBorder": "#BC6266",
+      "focus": "rgba(211, 196, 179, 0.50)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(51, 49, 46, 0.5)",
+      "disabledBackground": "rgba(211, 196, 179, 0.16)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, rgba(188, 98, 102, 1) 0%, rgba(210, 125, 84, 1) 100%)",
+      "brandVertical": "linear-gradient(0deg, rgba(188, 98, 102, 1) 0%, rgba(210, 125, 84, 1) 100%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}
