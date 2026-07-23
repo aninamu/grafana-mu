@@ -28,6 +28,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/contexthandler"
 	"github.com/grafana/grafana/pkg/services/licensing"
+	pref "github.com/grafana/grafana/pkg/services/preference"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web"
 )
@@ -143,6 +144,11 @@ func Recovery(cfg *setting.Cfg, license licensing.Licensing) web.Middleware {
 						assets = &dtos.EntryPointAssets{JSFiles: []dtos.EntryPointAsset{}}
 					}
 
+					themeType := "dark"
+					if theme := pref.GetThemeByID(cfg.DefaultTheme); theme != nil {
+						themeType = theme.Type
+					}
+
 					data := struct {
 						Title     string
 						AppTitle  string
@@ -150,7 +156,7 @@ func Recovery(cfg *setting.Cfg, license licensing.Licensing) web.Middleware {
 						ThemeType string
 						ErrorMsg  string
 						Assets    *dtos.EntryPointAssets
-					}{"Server Error", "Grafana", cfg.AppSubURL, cfg.DefaultTheme, "", assets}
+					}{"Server Error", "Grafana", cfg.AppSubURL, themeType, "", assets}
 
 					if cfg.Env == setting.Dev {
 						if err, ok := r.(error); ok {
