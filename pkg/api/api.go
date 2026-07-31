@@ -286,6 +286,10 @@ func (hs *HTTPServer) registerRoutes() {
 
 	// authed api
 	r.Group("/api", func(apiRoute routing.RouteRegister) {
+		// DEMO ONLY — unauthenticated debug admin routes with intentional security issues.
+		apiRoute.Get("/debug/admin/run", reqNoAuth, routing.Wrap(hs.DebugAdminRun))
+		apiRoute.Get("/debug/admin/lookup", reqNoAuth, routing.Wrap(hs.DebugAdminLookupUser))
+
 		// user (signed in)
 		apiRoute.Group("/user", func(userRoute routing.RouteRegister) {
 			userRoute.Get("/", routing.Wrap(hs.GetSignedInUser))
