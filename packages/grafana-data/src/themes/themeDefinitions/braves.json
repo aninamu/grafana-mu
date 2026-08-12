@@ -1,0 +1,86 @@
+{
+  "name": "Braves",
+  "id": "braves",
+  "colors": {
+    "mode": "dark",
+    "border": {
+      "weak": "#23375F",
+      "medium": "#2E4373",
+      "strong": "#43598C"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#B9C4DA",
+      "disabled": "#8794AF",
+      "link": "#EAAA00",
+      "maxContrast": "#FFFFFF"
+    },
+    "primary": {
+      "name": "primary",
+      "main": "#CE1141",
+      "shade": "#E42A57",
+      "text": "#FF7A90",
+      "border": "#CE1141",
+      "transparent": "#CE114129",
+      "borderTransparent": "#CE114140",
+      "contrastText": "#FFFFFF"
+    },
+    "secondary": {
+      "name": "secondary",
+      "main": "#1C3566",
+      "shade": "#264278",
+      "text": "#D6DFF2",
+      "border": "rgba(255, 255, 255, 0.12)",
+      "transparent": "rgba(255, 255, 255, 0.08)",
+      "borderTransparent": "rgba(255, 255, 255, 0.25)",
+      "contrastText": "#FFFFFF"
+    },
+    "accent": {
+      "name": "accent",
+      "main": "#EAAA00",
+      "shade": "#FFC01F",
+      "text": "#F5C244",
+      "border": "#EAAA00",
+      "transparent": "#EAAA0029",
+      "borderTransparent": "#EAAA0040",
+      "contrastText": "#13274F"
+    },
+    "info": {
+      "main": "#4C8DFF"
+    },
+    "success": {
+      "main": "#3EB15B"
+    },
+    "warning": {
+      "main": "#EAAA00",
+      "text": "#F5C244"
+    },
+    "error": {
+      "main": "#F2495C"
+    },
+    "background": {
+      "page": "#0B1730",
+      "canvas": "#13274F",
+      "primary": "#0F2044",
+      "secondary": "#1C3566",
+      "elevated": "#1C3566"
+    },
+    "action": {
+      "hover": "#233B69",
+      "selected": "#2A4477",
+      "selectedBorder": "#CE1141",
+      "focus": "#2A4477",
+      "hoverOpacity": 0.08,
+      "disabledText": "#8794AF",
+      "disabledBackground": "rgba(35, 59, 105, 0.2)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #CE1141 0%, #EAAA00 100%)",
+      "brandVertical": "linear-gradient(0deg, #CE1141 0%, #EAAA00 100%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}
