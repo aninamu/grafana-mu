@@ -151,7 +151,7 @@ func ToCamelCase(str string) string {
 	}
 
 	for index, part := range finalParts[1:] {
-		finalParts[index+1] = strings.Title(part)
+		finalParts[index+1] = Capitalize(part)
 	}
 
 	return strings.Join(finalParts, "")

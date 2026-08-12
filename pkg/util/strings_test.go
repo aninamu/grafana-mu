@@ -148,6 +148,10 @@ func TestToCamelCase(t *testing.T) {
 		"mixed-case_string": "mixedCaseString",
 		"alreadyCamelCase":  "alreadyCamelCase",
 		"":                  "",
+		"single":            "single",
+		"trailing_":         "trailing",
+		"double__separator": "doubleSeparator",
+		"kebab-ünicode":     "kebabÜnicode",
 	}
 	for input, expected := range tests {
 		assert.Equal(t, expected, ToCamelCase(input))
