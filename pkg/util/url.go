@@ -12,13 +12,8 @@ type URLQueryReader struct {
 
 // NewURLQueryReader parses a raw query and returns it as a URLQueryReader type.
 func NewURLQueryReader(urlInfo *url.URL) (*URLQueryReader, error) {
-	u, err := url.ParseQuery(urlInfo.RawQuery)
-	if err != nil {
-		return nil, err
-	}
-
 	return &URLQueryReader{
-		values: u,
+		values: urlInfo.Query(),
 	}, nil
 }
 
