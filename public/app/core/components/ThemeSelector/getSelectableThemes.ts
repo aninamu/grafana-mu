@@ -11,6 +11,7 @@ export function getSelectableThemes() {
     'gildedgrove',
     'sapphiredusk',
     'tron',
+    'cursor',
     'gloom',
   ];
 

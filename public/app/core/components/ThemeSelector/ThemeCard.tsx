@@ -6,6 +6,8 @@ import { FeatureBadge, RadioButtonDot, useStyles2 } from '@grafana/ui';
 
 import { ThemePreview } from '../Theme/ThemePreview';
 
+import { getThemeSwatches } from './getThemeSwatches';
+
 interface ThemeCardProps {
   themeOption: ThemeRegistryItem;
   isExperimental?: boolean;
@@ -17,6 +19,7 @@ export function ThemeCard({ themeOption, isExperimental, isSelected, onSelect }:
   const theme = themeOption.build();
   const label = getTranslatedThemeName(themeOption);
   const styles = useStyles2(getStyles);
+  const swatches = getThemeSwatches(theme, 3);
 
   return (
     // this is a convenience for mouse users. keyboard/screen reader users will use the radio button
@@ -35,6 +38,11 @@ export function ThemeCard({ themeOption, isExperimental, isSelected, onSelect }:
           checked={isSelected}
         />
         {isExperimental && <FeatureBadge featureState={FeatureState.experimental} />}
+      </div>
+      <div className={styles.swatches}>
+        {swatches.map((color, index) => (
+          <span key={index} className={styles.swatch} style={{ backgroundColor: color }} />
+        ))}
       </div>
       <ThemePreview theme={theme} />
     </div>
@@ -64,6 +72,16 @@ const getStyles = (theme: GrafanaTheme2) => {
       '> label': {
         cursor: 'pointer',
       },
+    }),
+    swatches: css({
+      display: 'flex',
+      gap: theme.spacing(0.5),
+      padding: theme.spacing(0.5, 1),
+    }),
+    swatch: css({
+      borderRadius: theme.shape.radius.circle,
+      height: theme.spacing(1.5),
+      width: theme.spacing(1.5),
     }),
   };
 };
