@@ -484,7 +484,7 @@ func (hs *HTTPServer) registerRoutes() {
 			dashboardRoute.Post("/db", authorize(ac.EvalAny(ac.EvalPermission(dashboards.ActionDashboardsCreate), ac.EvalPermission(dashboards.ActionDashboardsWrite))), routing.Wrap(hs.PostDashboard))
 			dashboardRoute.Get("/home", routing.Wrap(hs.GetHomeDashboard))
 			dashboardRoute.Get("/tags", hs.GetDashboardTags)
-			dashboardRoute.Get("/lookup", reqSignedIn, routing.Wrap(hs.LookupDashboards))
+			dashboardRoute.Get("/lookup", authorize(ac.EvalPermission(dashboards.ActionDashboardsRead)), routing.Wrap(hs.LookupDashboards))
 
 			// Deprecated: used to convert internal IDs to UIDs
 			dashboardRoute.Get("/ids/:ids", authorize(ac.EvalPermission(dashboards.ActionDashboardsRead)), hs.GetDashboardUIDs)

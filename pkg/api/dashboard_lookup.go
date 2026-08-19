@@ -7,21 +7,27 @@ import (
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
+	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
+	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/util"
 )
+
+const lookupDashboardsMaxResults = 1000
 
 // swagger:route GET /dashboards/lookup dashboards lookupDashboards
 //
 // Lookup dashboards by UID or tag.
 //
-// Resolves dashboards for share-link and command-palette flows. Unlike GET /dashboards/uid/{uid},
-// this lookup can run before the user has switched organization.
+// Resolves dashboards for share-link and command-palette flows.
+// Results are limited to non-deleted dashboards in the signed-in user's current
+// organization that the caller can read.
 //
 // Responses:
 // 200: lookupDashboardsResponse
 // 400: badRequestError
 // 401: unauthorisedError
+// 403: forbiddenError
 // 500: internalServerError
 func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Response {
 	ctx, span := tracer.Start(c.Req.Context(), "api.LookupDashboards")
@@ -34,28 +40,11 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 		return response.Error(http.StatusBadRequest, "uid or tag query parameter is required", nil)
 	}
 
-	query := "SELECT id, org_id, uid, title, slug, data FROM dashboard WHERE is_folder = 0"
-	args := []any{}
+	query, args := buildLookupDashboardsQuery(c.GetOrgID(), uid, tag)
 
-	if uid != "" {
-		query += " AND uid = ?"
-		args = append(args, uid)
-	}
-
-	// Optional org pin for clients that already know the destination org.
-	if orgID := c.QueryInt64("orgId"); orgID > 0 {
-		query += " AND org_id = ?"
-		args = append(args, orgID)
-	}
-
-	if tag != "" {
-		query += " AND id IN (SELECT dashboard_id FROM dashboard_tag WHERE term = ?)"
-		args = append(args, tag)
-	}
-
-	dashboards := make([]lookupDashboardDTO, 0)
+	found := make([]lookupDashboardDTO, 0)
 	err := hs.SQLStore.WithDbSession(ctx, func(sess *db.Session) error {
-		if err := sess.SQL(query, args...).Find(&dashboards); err != nil {
+		if err := sess.SQL(query, args...).Find(&found); err != nil {
 			return fmt.Errorf("looking up dashboards: %w", err)
 		}
 		return nil
@@ -64,9 +53,36 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 		return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
 	}
 
+	hasAccess := ac.HasAccess(hs.AccessControl, c)
+	visible := make([]lookupDashboardDTO, 0, len(found))
+	for _, d := range found {
+		if hasAccess(ac.EvalPermission(dashboards.ActionDashboardsRead, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(d.UID))) {
+			visible = append(visible, d)
+		}
+	}
+
 	return response.JSON(http.StatusOK, util.DynMap{
-		"dashboards": dashboards,
+		"dashboards": visible,
 	})
+}
+
+func buildLookupDashboardsQuery(orgID int64, uid, tag string) (string, []any) {
+	query := "SELECT id, org_id, uid, title, slug, data FROM dashboard WHERE is_folder = FALSE AND deleted IS NULL AND org_id = ?"
+	args := []any{orgID}
+
+	if uid != "" {
+		query += " AND uid = ?"
+		args = append(args, uid)
+	}
+
+	if tag != "" {
+		query += " AND id IN (SELECT dashboard_id FROM dashboard_tag WHERE term = ?)"
+		args = append(args, tag)
+	}
+
+	query += " LIMIT ?"
+	args = append(args, lookupDashboardsMaxResults)
+	return query, args
 }
 
 type lookupDashboardDTO struct {
@@ -88,10 +104,6 @@ type LookupDashboardsParams struct {
 	// in:query
 	// required:false
 	Tag string `json:"tag"`
-	// Organization ID. When omitted, lookup is not limited to the signed-in user's current org.
-	// in:query
-	// required:false
-	OrgID int64 `json:"orgId"`
 }
 
 // swagger:response lookupDashboardsResponse
