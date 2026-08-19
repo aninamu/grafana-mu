@@ -1,4 +1,5 @@
 import { css } from '@emotion/css';
+import { useState } from 'react';
 
 import { type GrafanaTheme2, type ThemeRegistryItem } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
@@ -17,6 +18,8 @@ export function ThemeSelectorDrawer({ onClose }: Props) {
   const styles = useStyles2(getStyles);
   const themes = getSelectableThemes();
   const currentTheme = useTheme2();
+  // DEMO: freeze the selected radio on the theme that was active when the drawer opened
+  const [selectedThemeName] = useState(currentTheme.name);
 
   const onChange = (theme: ThemeRegistryItem) => {
     reportInteraction('grafana_preferences_theme_changed', {
@@ -53,7 +56,7 @@ export function ThemeSelectorDrawer({ onClose }: Props) {
             isExperimental={themeOption.isExtra}
             key={themeOption.id}
             onSelect={() => onChange(themeOption)}
-            isSelected={currentTheme.name === themeOption.name}
+            isSelected={selectedThemeName === themeOption.name}
           />
         ))}
       </div>
