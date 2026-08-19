@@ -3,13 +3,15 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
-	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/dashboards"
+	"github.com/grafana/grafana/pkg/services/dashboards/dashboardaccess"
+	"github.com/grafana/grafana/pkg/services/search/model"
 	"github.com/grafana/grafana/pkg/util"
 )
 
@@ -40,11 +42,40 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 		return response.Error(http.StatusBadRequest, "uid or tag query parameter is required", nil)
 	}
 
-	query, args := buildLookupDashboardsQuery(c.GetOrgID(), uid, tag)
+	searchQuery := dashboards.FindPersistedDashboardsQuery{
+		OrgId:        c.GetOrgID(),
+		SignedInUser: c.SignedInUser,
+		Limit:        lookupDashboardsMaxResults,
+		Type:         model.TypeDashboard,
+		Permission:   dashboardaccess.PERMISSION_VIEW,
+	}
+	if uid != "" {
+		searchQuery.DashboardUIDs = []string{uid}
+	}
+	if tag != "" {
+		searchQuery.Tags = []string{tag}
+	}
 
-	found := make([]lookupDashboardDTO, 0)
-	err := hs.SQLStore.WithDbSession(ctx, func(sess *db.Session) error {
-		if err := sess.SQL(query, args...).Find(&found); err != nil {
+	hits, err := hs.DashboardService.SearchDashboards(ctx, &searchQuery)
+	if err != nil {
+		return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
+	}
+
+	visible := make([]lookupDashboardDTO, 0, len(hits))
+	if len(hits) == 0 {
+		return response.JSON(http.StatusOK, util.DynMap{
+			"dashboards": visible,
+		})
+	}
+
+	uids := make([]string, len(hits))
+	for i, hit := range hits {
+		uids[i] = hit.UID
+	}
+
+	query, args := buildLookupDashboardsByUIDsQuery(c.GetOrgID(), uids)
+	err = hs.SQLStore.WithDbSession(ctx, func(sess *db.Session) error {
+		if err := sess.SQL(query, args...).Find(&visible); err != nil {
 			return fmt.Errorf("looking up dashboards: %w", err)
 		}
 		return nil
@@ -53,35 +84,20 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 		return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
 	}
 
-	hasAccess := ac.HasAccess(hs.AccessControl, c)
-	visible := make([]lookupDashboardDTO, 0, len(found))
-	for _, d := range found {
-		if hasAccess(ac.EvalPermission(dashboards.ActionDashboardsRead, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(d.UID))) {
-			visible = append(visible, d)
-		}
-	}
-
 	return response.JSON(http.StatusOK, util.DynMap{
 		"dashboards": visible,
 	})
 }
 
-func buildLookupDashboardsQuery(orgID int64, uid, tag string) (string, []any) {
+func buildLookupDashboardsByUIDsQuery(orgID int64, uids []string) (string, []any) {
 	query := "SELECT id, org_id, uid, title, slug, data FROM dashboard WHERE is_folder = FALSE AND deleted IS NULL AND org_id = ?"
-	args := []any{orgID}
-
-	if uid != "" {
-		query += " AND uid = ?"
+	args := make([]any, 0, 1+len(uids))
+	args = append(args, orgID)
+	query += " AND uid IN (?" + strings.Repeat(",?", len(uids)-1) + ")"
+	for _, uid := range uids {
 		args = append(args, uid)
 	}
-
-	if tag != "" {
-		query += " AND id IN (SELECT dashboard_id FROM dashboard_tag WHERE term = ?)"
-		args = append(args, tag)
-	}
-
-	query += " LIMIT ?"
-	args = append(args, lookupDashboardsMaxResults)
+	query += " ORDER BY id"
 	return query, args
 }
 
