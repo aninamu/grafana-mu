@@ -151,7 +151,7 @@ func TestLookupDashboards(t *testing.T) {
 		sc.handlerFunc = hs.LookupDashboards
 		sc.fakeReqWithParams("GET", sc.url, map[string]string{"uid": "dash", "orgId": "2"}).exec()
 
-		assert.Equal(t, http.StatusForbidden, sc.resp.Code)
+		assert.Equal(t, http.StatusInternalServerError, sc.resp.Code)
 		dashSvc.AssertNotCalled(t, "SearchDashboards")
 	}, mockSQLStore)
 
@@ -204,6 +204,34 @@ func TestLookupDashboards(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, sc.resp.Code)
 		dashSvc.AssertNumberOfCalls(t, "SearchDashboards", 2)
+	}, mockSQLStore)
+
+	loggedInUserScenario(t, "When calling GET with uid and identity resolve fails for one org on", "/api/dashboards/lookup", "/api/dashboards/lookup", func(sc *scenarioContext) {
+		const otherOrgID int64 = 2
+		dashSvc := dashboards.NewFakeDashboardService(t)
+		dashSvc.On("SearchDashboards", mock.Anything, mock.MatchedBy(func(q *dashboards.FindPersistedDashboardsQuery) bool {
+			return q.OrgId == testOrgID &&
+				len(q.DashboardUIDs) == 1 && q.DashboardUIDs[0] == "dash"
+		})).Return(model.HitList{}, nil).Once()
+
+		hs := &HTTPServer{
+			Cfg:              setting.NewCfg(),
+			SQLStore:         mockSQLStore,
+			DashboardService: dashSvc,
+			orgService: &orgtest.FakeOrgService{ExpectedUserOrgDTO: []*org.UserOrgDTO{
+				{OrgID: otherOrgID},
+				{OrgID: testOrgID},
+			}},
+			authnService: &authntest.FakeService{
+				ExpectedIdentity: &authn.Identity{},
+				ExpectedErr:      errors.New("resolve failed"),
+			},
+		}
+		sc.handlerFunc = hs.LookupDashboards
+		sc.fakeReqWithParams("GET", sc.url, map[string]string{"uid": "dash"}).exec()
+
+		require.Equal(t, http.StatusOK, sc.resp.Code)
+		dashSvc.AssertNumberOfCalls(t, "SearchDashboards", 1)
 	}, mockSQLStore)
 }
 

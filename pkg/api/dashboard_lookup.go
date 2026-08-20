@@ -59,6 +59,7 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 	}
 
 	visible := make([]lookupDashboardDTO, 0)
+	pinnedLookup := c.QueryInt64("orgId") > 0
 	for _, orgID := range orgIDs {
 		remaining := lookupDashboardsMaxResults - int64(len(visible))
 		if remaining <= 0 {
@@ -67,7 +68,13 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 
 		searchCtx, requester, err := hs.requesterForOrg(ctx, c, orgID)
 		if err != nil {
-			return response.Error(http.StatusForbidden, "Access denied", err)
+			if !pinnedLookup {
+				continue
+			}
+			if errors.Is(err, errLookupOrgAccessDenied) {
+				return response.Error(http.StatusForbidden, "Access denied", err)
+			}
+			return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
 		}
 
 		searchQuery := dashboards.FindPersistedDashboardsQuery{
