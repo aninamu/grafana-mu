@@ -2,12 +2,16 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/apimachinery/identity"
 	"github.com/grafana/grafana/pkg/components/simplejson"
+	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/dashboards/dashboardaccess"
@@ -17,6 +21,8 @@ import (
 )
 
 const lookupDashboardsMaxResults = 1000
+
+var errLookupOrgAccessDenied = errors.New("user is not a member of the requested organization")
 
 // swagger:route GET /dashboards/lookup dashboards lookupDashboards
 //
@@ -46,6 +52,9 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 
 	orgIDs, err := hs.lookupOrgIDs(ctx, c)
 	if err != nil {
+		if errors.Is(err, errLookupOrgAccessDenied) {
+			return response.Error(http.StatusForbidden, "Access denied", err)
+		}
 		return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
 	}
 
@@ -58,7 +67,7 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 
 		searchCtx, requester, err := hs.requesterForOrg(ctx, c, orgID)
 		if err != nil {
-			continue
+			return response.Error(http.StatusForbidden, "Access denied", err)
 		}
 
 		searchQuery := dashboards.FindPersistedDashboardsQuery{
@@ -88,24 +97,19 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 			uids[i] = hit.UID
 		}
 
-		dashes, err := hs.DashboardService.GetDashboards(searchCtx, &dashboards.GetDashboardsQuery{
-			DashboardUIDs: uids,
-			OrgID:         orgID,
+		loaded := make([]lookupDashboardDTO, 0, len(uids))
+		query, args := buildLookupDashboardsByUIDsQuery(orgID, uids)
+		err = hs.SQLStore.WithDbSession(searchCtx, func(sess *db.Session) error {
+			if err := sess.SQL(query, args...).Find(&loaded); err != nil {
+				return fmt.Errorf("looking up dashboards: %w", err)
+			}
+			return nil
 		})
 		if err != nil {
 			return response.Error(http.StatusInternalServerError, "Failed to lookup dashboards", err)
 		}
 
-		for _, d := range dashes {
-			visible = append(visible, lookupDashboardDTO{
-				ID:    d.ID,
-				OrgID: d.OrgID,
-				UID:   d.UID,
-				Title: d.Title,
-				Slug:  d.Slug,
-				Data:  d.Data,
-			})
-		}
+		visible = append(visible, loaded...)
 	}
 
 	return response.JSON(http.StatusOK, util.DynMap{
@@ -114,12 +118,16 @@ func (hs *HTTPServer) LookupDashboards(c *contextmodel.ReqContext) response.Resp
 }
 
 func (hs *HTTPServer) lookupOrgIDs(ctx context.Context, c *contextmodel.ReqContext) ([]int64, error) {
-	if orgID := c.QueryInt64("orgId"); orgID > 0 {
-		return []int64{orgID}, nil
-	}
+	pinnedOrgID := c.QueryInt64("orgId")
 
 	userID, err := c.GetInternalID()
 	if err != nil || userID <= 0 {
+		if pinnedOrgID > 0 && pinnedOrgID != c.GetOrgID() {
+			return nil, errLookupOrgAccessDenied
+		}
+		if pinnedOrgID > 0 {
+			return []int64{pinnedOrgID}, nil
+		}
 		return []int64{c.GetOrgID()}, nil
 	}
 
@@ -135,8 +143,18 @@ func (hs *HTTPServer) lookupOrgIDs(ctx context.Context, c *contextmodel.ReqConte
 		}
 	}
 	if len(orgIDs) == 0 {
-		return []int64{c.GetOrgID()}, nil
+		orgIDs = []int64{c.GetOrgID()}
 	}
+
+	if pinnedOrgID > 0 {
+		for _, id := range orgIDs {
+			if id == pinnedOrgID {
+				return []int64{pinnedOrgID}, nil
+			}
+		}
+		return nil, errLookupOrgAccessDenied
+	}
+
 	return orgIDs, nil
 }
 
@@ -149,7 +167,24 @@ func (hs *HTTPServer) requesterForOrg(ctx context.Context, c *contextmodel.ReqCo
 	if err != nil {
 		return ctx, nil, fmt.Errorf("resolving identity for org %d: %w", orgID, err)
 	}
+	// ResolveIdentity can succeed for non-members; those identities have NoOrgID and
+	// must not be used to search or load dashboards in the target organization.
+	if ident.GetOrgID() == accesscontrol.NoOrgID {
+		return ctx, nil, errLookupOrgAccessDenied
+	}
 	return identity.WithRequester(ctx, ident), ident, nil
+}
+
+func buildLookupDashboardsByUIDsQuery(orgID int64, uids []string) (string, []any) {
+	query := "SELECT id, org_id, uid, title, slug, data FROM dashboard WHERE is_folder = FALSE AND deleted IS NULL AND org_id = ?"
+	args := make([]any, 0, 1+len(uids))
+	args = append(args, orgID)
+	query += " AND uid IN (?" + strings.Repeat(",?", len(uids)-1) + ")"
+	for _, uid := range uids {
+		args = append(args, uid)
+	}
+	query += " ORDER BY id"
+	return query, args
 }
 
 type lookupDashboardDTO struct {
