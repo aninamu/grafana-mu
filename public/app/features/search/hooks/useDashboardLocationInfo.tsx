@@ -8,7 +8,7 @@ import { type LocationInfo } from 'app/features/search/service/types';
  * @description Hook to fetch dashboard location info (folders).
  * @returns An object containing a mapping of folder UIDs to LocationInfo, loading state, and error state.
  */
-export function useDashboardLocationInfo(enabled: boolean) {
+export function useDashboardLocationInfo(enabled: boolean, folderUIDs?: string[]) {
   const searcher = getGrafanaSearcher();
   const {
     value: foldersByUid,
@@ -18,8 +18,8 @@ export function useDashboardLocationInfo(enabled: boolean) {
     if (!enabled) {
       return {};
     }
-    return searcher.getLocationInfo();
-  }, [enabled, searcher]);
+    return searcher.getLocationInfo(folderUIDs);
+  }, [enabled, searcher, folderUIDs]);
 
   return {
     foldersByUid: foldersByUid ?? {},
