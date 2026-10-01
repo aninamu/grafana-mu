@@ -93,6 +93,39 @@ const createDashboardTabsExtensionComponent = (
   );
 
 describe('DashboardTabs', () => {
+  it('does not request all folders on initial render for root dashboards', async () => {
+    seedRecent(['recent-1', 'recent-2']);
+    seedStars(['starred-1']);
+
+    const requests: string[] = [];
+    const allHits = [...recentHits, ...starredHits];
+    server.use(
+      http.get('/apis/dashboard.grafana.app/v0alpha1/namespaces/default/search', ({ request }) => {
+        const url = new URL(request.url);
+        requests.push(url.search);
+
+        const names = url.searchParams.getAll('name');
+        const types = url.searchParams.getAll('type');
+        const hits = allHits.filter((hit) => {
+          const matchesName = names.length === 0 || names.includes(hit.name);
+          const matchesType = types.length === 0 || types.includes('dashboard');
+          return matchesName && matchesType;
+        });
+
+        return HttpResponse.json({
+          totalHits: hits.length,
+          hits,
+        });
+      })
+    );
+
+    render(<DashboardTabs />);
+
+    expect(await screen.findByText('Recent Dashboard 1')).toBeInTheDocument();
+
+    expect(requests.some((search) => search.includes('type=folder') && search.includes('limit=100000'))).toBe(false);
+  });
+
   it('renders Recent tab as active by default and shows recent dashboards', async () => {
     seedRecent(['recent-1', 'recent-2']);
     server.use(getCustomSearchHandler([...recentHits, ...starredHits]));
